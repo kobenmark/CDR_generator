@@ -1,0 +1,1 @@
+Main-Class: com.bgandrew.cdr_generator.Generator
