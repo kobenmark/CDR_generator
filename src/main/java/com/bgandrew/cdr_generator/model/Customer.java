@@ -2,6 +2,7 @@ package com.bgandrew.cdr_generator.model;
 
 import com.google.gson.annotations.Expose;
 import com.bgandrew.cdr_generator.utils.Utils;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.Random;
 
@@ -25,11 +26,12 @@ public class Customer implements Comparable<Customer> {
     private final long IMSI;
     
     
-    //TODO make location to change from one call to another
-    @Expose
-    private double latitude = Utils.generateLatitude();
-    @Expose
-    private double longitude = Utils.generateLongitude();
+    private Location location;
+    
+    // set of home , work and other locations 
+    private final LocationSet locationSet;
+    
+    
     
     @Expose
     private int activity = 0; 
@@ -42,27 +44,29 @@ public class Customer implements Comparable<Customer> {
     
     
     public Customer() {
-        this.IMEI = 0;
-        this.MSISDN = 0;
-        this.IMSI = 0;
-        latitude = 0;
-        longitude = 0;
-        this.activity = 0;
+        IMEI = 0;
+        MSISDN = 0;
+        IMSI = 0;
+        activity = 0;
         lastCallTime = LocalDateTime.MIN;
+        locationSet = null;
     }
     
-    public Customer(long MSISDN, long IMEI, long IMSI, int activity, LocalDateTime startTime) {
+    private Customer(long MSISDN, long IMEI, long IMSI, int activity, LocalDateTime startTime, LocationSet locationSet) {
         this.IMEI = IMEI;
         this.MSISDN = MSISDN;
         this.IMSI = IMSI;
         this.activity = activity;
-        latitude = Utils.generateLatitude();
-        longitude = Utils.generateLongitude();
+        this.locationSet = locationSet;  
         lastCallTime = startTime;
+        
+        location = Utils.CITY_LOCATIONS.get(locationSet.city); // initial value, just in case
+        
     }
     
-    public static Customer generatePhone (LocalDateTime startTime) {
-        return new Customer (Utils.generateMSISDN(), Utils.generateIMSI(), Utils.generateIMSI(), generateActivityValue(), startTime);
+    // TODO convert to Builder
+    public static Customer generatePhone (LocalDateTime startTime, LocationSet locationSet) {
+        return new Customer (Utils.generateMSISDN(locationSet.city), Utils.generateIMSI(), Utils.generateIMSI(), generateActivityValue(), startTime, locationSet);
        
     }
    
@@ -71,7 +75,7 @@ public class Customer implements Comparable<Customer> {
     }
     
     
-    private LocalDateTime pickNextCallTime(Customer recepient) {
+    private LocalDateTime generateCallTime(Customer recepient) {
         LocalDateTime result = lastCallTime.isAfter(recepient.getLastCallTime()) ? 
                 lastCallTime : recepient.getLastCallTime();
         
@@ -103,6 +107,40 @@ public class Customer implements Comparable<Customer> {
     }
     
     
+    private void updateCallLocation(LocalDateTime time) {
+        // generate random location to avoid determenistic behavior
+        Location newLocation = Utils.randomLocationInCity(locationSet.city);
+        
+        final int hour = time.getHour();
+        final DayOfWeek day = time.getDayOfWeek();
+        
+        if (hour < 8 || hour > 20) {
+            // almost certainly at home
+            if (Utils.bernoulliTrial(0.99f)) newLocation = locationSet.home;
+        } else  if (hour > 10 && hour < 19) {            
+            if (day.compareTo(DayOfWeek.SATURDAY) <0) { // working day
+                // almost certainly at work
+                if (Utils.bernoulliTrial(0.99f)) newLocation = locationSet.work;
+            } else { // weekend
+                if (Utils.bernoulliTrial(0.6f)) {
+                    // having fun in some other place
+                    newLocation = locationSet.other;
+                } else if (Utils.bernoulliTrial(0.4f)) {
+                    //or at home
+                    newLocation = locationSet.home;
+                }
+            }
+        } else {
+            if (Utils.bernoulliTrial(0.5f)) {
+                // either on the way, or in "other" place
+                newLocation = locationSet.other;
+            }
+        }
+        
+        location = newLocation;
+    }
+        
+    
     public long getIMEI() {
         return IMEI;
     }
@@ -115,14 +153,6 @@ public class Customer implements Comparable<Customer> {
         return IMSI;
     }
     
-    public double getLatitude() {
-        return latitude;
-    }
-    
-    public double getLongitude() {
-        return longitude;
-    }
-
     public LocalDateTime getLastCallTime() {
         return lastCallTime;
     }
@@ -135,16 +165,24 @@ public class Customer implements Comparable<Customer> {
         return activity;
     }
     
+    public Location getLocation(){
+        return location;
+    }
+    
     
     public CDR call (Customer recepient, CallType type, int duration, int length) {
         
-        LocalDateTime time = pickNextCallTime(recepient);
+        final LocalDateTime time = generateCallTime(recepient);
         
         if (time.isBefore(lastCallTime) || time.isBefore(recepient.lastCallTime) ) {
             throw new IllegalArgumentException("This call can interfere with previous calls. " +
                    "call time is " + time + " last call time is " + lastCallTime + " and recepient "
                     + "last call time is " + recepient.getLastCallTime());
         }
+        
+        updateCallLocation(time);
+        recepient.updateCallLocation(time);
+        
         numberOfCalls++;
         lastCallTime = time.plusSeconds(duration);
         recepient.lastCallTime = lastCallTime; // same as for current phone
@@ -169,9 +207,9 @@ public class Customer implements Comparable<Customer> {
 
     @Override
     public String toString() {
-        return "Customer{" + "IMEI=" + IMEI + ", MSISDN=" + MSISDN + ", IMSI=" + IMSI + ", latitude=" + latitude + ", longitude=" + longitude + ", activity=" + activity + ", lastCallTime=" + lastCallTime + ", numberOfCalls=" + numberOfCalls + '}';
+        return "Customer{" + "IMEI=" + IMEI + ", MSISDN=" + MSISDN + ", IMSI=" + IMSI + ", location=" + location + ", locationSet=" + locationSet + ", activity=" + activity + ", lastCallTime=" + lastCallTime + ", numberOfCalls=" + numberOfCalls + '}';
     }
-    
+
     
     
     

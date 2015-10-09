@@ -40,20 +40,20 @@ public class CDR {
            append(caller.getMSISDN()).append(';').
            append(caller.getIMEI()).append(';').
            append(caller.getIMSI()).append(';').
-           append(caller.getLatitude()).append(';').
-           append(caller.getLongitude()).append(';').
+           append(caller.getLocation().latitude).append(';').
+           append(caller.getLocation().longitude).append(';').
            
            append(recipient.getMSISDN()).append(';').
            append(recipient.getIMEI()).append(';').
            append(recipient.getIMSI()).append(';').
-           append(recipient.getLatitude()).append(';').
-           append(recipient.getLongitude()).append(';').
+           append(recipient.getLocation().latitude).append(';').
+           append(recipient.getLocation().longitude).append(';').
                 
            append(type).append(';').
            append(duration).append(';').
            append(length);
         
-        
+         
         return sb.toString();
     }
     

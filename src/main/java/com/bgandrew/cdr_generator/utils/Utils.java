@@ -1,9 +1,14 @@
 package com.bgandrew.cdr_generator.utils;
 
 import com.bgandrew.cdr_generator.model.Customer;
+import com.bgandrew.cdr_generator.model.Location;
+import static com.bgandrew.cdr_generator.model.LocationSet.CITY;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /** Utility class to generate different Customer attributes and other stuff
@@ -73,16 +78,32 @@ public class Utils {
     
     
     // Los Angeles coordinates
-    private static double DEFAULT_LATITUDE = 34.011992;
-    private static double DEFAULT_LONGITUDE = -117.975026;
     
     
-    // Los Angeles codes
-    public static List<String> USA_NDCs = Collections.unmodifiableList(Arrays.asList(
+    
+    private static final double CITY_RADIUS = 0.1; // about 11 kilometers
+    public static final Map<CITY, Location> CITY_LOCATIONS;
+    
+        // Los Angeles codes
+    public static Map<CITY,List<String>> USA_NDCs;
+    
+    static {
+        Map<CITY, Location> locations = new HashMap<>();
+        locations.put(CITY.LA, new Location(33.938234, -118.106140));
+        locations.put(CITY.SD, new Location(32.799612, -117.140673));
+        locations.put(CITY.SJ, new Location(37.317485, -121.893148));
+        CITY_LOCATIONS = Collections.unmodifiableMap(locations);
+        
+        Map<CITY,List<String>> ndcs = new HashMap<>();
+        ndcs.put(CITY.LA, Collections.unmodifiableList(Arrays.asList(
                             "213", "310", "323",
                             "424", "626", "818",
-                            "661","747"));
-    
+                            "661","747")));
+        ndcs.put(CITY.SD,  Collections.unmodifiableList(Arrays.asList("619","858")));
+        ndcs.put(CITY.SJ,  Collections.unmodifiableList(Arrays.asList("408")));
+        USA_NDCs = Collections.unmodifiableMap(ndcs);
+    }
+
     
     private static String randomNDigitsNumber (int n) {
         StringBuilder sb = new StringBuilder();
@@ -93,7 +114,9 @@ public class Utils {
     }
     
     public static <T> T pickRandomElement (List<T> list) {
-        
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
         int index = random.nextInt(list.size());
         return list.get(index);
     }
@@ -126,18 +149,9 @@ public class Utils {
         return Long.decode(pickRandomElement(TACs) + randomNDigitsNumber(6) + "0");
     }
     
-    // TODO currentrly we use only LA NDC.
-    public static long generateMSISDN() {
-        return Long.decode(USA_CC + pickRandomElement(USA_NDCs) + randomNDigitsNumber(7));
+    public static long generateMSISDN(CITY city) {
+        return Long.decode(USA_CC + pickRandomElement(USA_NDCs.get(city)) + randomNDigitsNumber(7));
         
-    }
-    
-    public static double generateLatitude() {
-        return (DEFAULT_LATITUDE + -0.02 + (0.04) * random.nextDouble());
-    }
-    
-    public static double generateLongitude() {
-        return (DEFAULT_LONGITUDE + -0.02 + (0.04) * random.nextDouble());
     }
     
     public static Customer.CallType generateCallType() {
@@ -152,9 +166,61 @@ public class Utils {
         return 40 + (random.nextInt(30) -15);
     }
     
+    private static Location randomLocationInArea(Location center, double radius) {
+        //using polar coordinates to generate random point in a circle
+
+        double r = radius * Math.sqrt(random.nextDouble());
+        double f = 2 * Math.PI * random.nextDouble();
+        
+        double x = r*Math.cos(f);
+        double y = r*Math.sin(f);
+        
+        return new Location(center.latitude + x, center.longitude + y);
+    } 
+    
+    public static Location randomLocationInCity(CITY city){
+        return randomLocationInArea(CITY_LOCATIONS.get(city), CITY_RADIUS);
+    } 
+    
+    public static CITY randomCity() {
+        return pickRandomElement(Arrays.asList(CITY.values()));
+    }
+    
+        
+    public static Map<CITY,List<Location>> generateLocationMap(int numberOfLocations) {
+        
+        if (numberOfLocations < 1)
+            numberOfLocations = 1;
+                
+        Map<CITY,List<Location>> map = new HashMap<>();
+        // this is workaround
+        // we need to be sure that at least one location in each city exists
+        // otherwise the program can crash with exception 
+        for (CITY city : CITY.values()) {
+
+            ArrayList<Location> list = new ArrayList<>();
+            list.add(randomLocationInCity(city));
+            map.put(city, list);
+        }
+        // fill each arraylist with random places in corresponding city
+        for (int i = 0; i < numberOfLocations; i++) {
+            CITY city = Utils.randomCity();
+            map.get(city).add(Utils.randomLocationInCity(city));    
+        }
+        
+        return map;
+    }
+    
+    // return true with probapability p (if p > 1 always true, if p < 0 always false)
+    public static boolean bernoulliTrial(float p) {
+        return random.nextFloat() < p;
+    }
+    
     public static void main(String[] args) {
-       System.out.println("IMEI " +  generateIMEI());
-       System.out.println("IMSI " + generateIMSI());
-       System.out.println("MSISDN " + generateMSISDN());
+        
+        System.out.println(random.nextInt(0));
+        //System.out.println("IMEI " +  generateIMEI());
+        //System.out.println("IMSI " + generateIMSI());
+        //System.out.println("MSISDN " + generateMSISDN());
     }
 }

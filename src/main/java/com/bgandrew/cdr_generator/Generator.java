@@ -5,6 +5,9 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.Gson;
 
 import com.bgandrew.cdr_generator.model.Customer;
+import com.bgandrew.cdr_generator.model.Location;
+import com.bgandrew.cdr_generator.model.LocationSet;
+import com.bgandrew.cdr_generator.model.LocationSet.CITY;
 import com.bgandrew.cdr_generator.utils.Utils;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
@@ -20,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /** Generator class.
  *
@@ -46,7 +50,7 @@ public class Generator {
         long starttime = System.nanoTime();
         
         int numberOfCalls = (int)1e7;
-        int numberOfDevices = 10;
+        int numberOfDevices = 1000;
         boolean doExport = false;
         boolean doImport = false;
         if (args.length > 0) {
@@ -86,8 +90,23 @@ public class Generator {
                 System.out.println("Error reading devices.json : " + e );
             }
         } else {
+            
+            // generate locations for homes, works and other places among all cities
+            Map<CITY,List<Location>> works = Utils.generateLocationMap(numberOfDevices/10);
+            Map<CITY,List<Location>> others = Utils.generateLocationMap(numberOfDevices);
+            Map<CITY,List<Location>> homes = Utils.generateLocationMap(numberOfDevices/2);
+            
+            
+            
             for (int i = 0; i < numberOfDevices; i++) {
-                customers.add(Customer.generatePhone(start_time));
+                // pick random set of home, work and other from one city
+                CITY city = Utils.randomCity();
+                LocationSet locationSet = new LocationSet(city,
+                        Utils.pickRandomElement(homes.get(city)),
+                        Utils.pickRandomElement(works.get(city)),
+                        Utils.pickRandomElement(others.get(city)));
+                
+                customers.add(Customer.generatePhone(start_time, locationSet));
             }
         }
         
@@ -109,6 +128,11 @@ public class Generator {
                 // we'll pick customers with more activity more frequently 
                 customer1 = Utils.pickElementWithTriangularDestribution(customers);
                 customer2 = Utils.pickElementWithTriangularDestribution(customers);
+                
+                if (customer1.equals(customer2)) {
+                    continue; // don't want to make customers to call themselfs
+                } 
+                
                 Customer.CallType type = Utils.generateCallType();
                 int duration;
                 int length;
