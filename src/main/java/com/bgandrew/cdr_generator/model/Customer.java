@@ -116,22 +116,22 @@ public class Customer implements Comparable<Customer> {
         
         if (hour < 8 || hour > 20) {
             // almost certainly at home
-            if (Utils.bernoulliTrial(0.99f)) newLocation = locationSet.home;
+            if (Utils.trueWithProbability(0.99f)) newLocation = locationSet.home;
         } else  if (hour > 10 && hour < 19) {            
             if (day.compareTo(DayOfWeek.SATURDAY) <0) { // working day
                 // almost certainly at work
-                if (Utils.bernoulliTrial(0.99f)) newLocation = locationSet.work;
+                if (Utils.trueWithProbability(0.99f)) newLocation = locationSet.work;
             } else { // weekend
-                if (Utils.bernoulliTrial(0.6f)) {
+                if (Utils.trueWithProbability(0.6f)) {
                     // having fun in some other place
                     newLocation = locationSet.other;
-                } else if (Utils.bernoulliTrial(0.4f)) {
+                } else if (Utils.trueWithProbability(0.4f)) {
                     //or at home
                     newLocation = locationSet.home;
                 }
             }
-        } else {
-            if (Utils.bernoulliTrial(0.5f)) {
+        } else { // 8-10 or 19-20
+            if (Utils.trueWithProbability(0.5f)) {
                 // either on the way, or in "other" place
                 newLocation = locationSet.other;
             }

@@ -212,7 +212,7 @@ public class Utils {
     }
     
     // return true with probapability p (if p > 1 always true, if p < 0 always false)
-    public static boolean bernoulliTrial(float p) {
+    public static boolean trueWithProbability(float p) {
         return random.nextFloat() < p;
     }
     
