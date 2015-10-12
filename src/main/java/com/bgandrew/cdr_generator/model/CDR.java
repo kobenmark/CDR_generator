@@ -11,7 +11,8 @@ public class CDR {
     
     
     
-    CDR (Customer caller, Customer recipient, LocalDateTime timestamp, Customer.CallType type, int duration, int length) {
+    CDR (Customer caller, Customer recipient, LocalDateTime timestamp,
+    		Customer.CallType type, int duration, int length) {
         this.caller = caller;
         this.recipient = recipient;
         this.timestamp = timestamp;
@@ -36,21 +37,21 @@ public class CDR {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         
-        sb.append(formatTimestamp(timestamp)).append(';').
-           append(caller.getMSISDN()).append(';').
-           append(caller.getIMEI()).append(';').
-           append(caller.getIMSI()).append(';').
-           append(caller.getLocation().latitude).append(';').
-           append(caller.getLocation().longitude).append(';').
+        sb.append(formatTimestamp(timestamp)).append(Constants.DELIMITER).
+           append(caller.getMSISDN()).append(Constants.DELIMITER).
+           append(caller.getIMEI()).append(Constants.DELIMITER).
+           append(caller.getIMSI()).append(Constants.DELIMITER).
+           append(caller.getLocation().latitude).append(Constants.DELIMITER).
+           append(caller.getLocation().longitude).append(Constants.DELIMITER).
            
-           append(recipient.getMSISDN()).append(';').
-           append(recipient.getIMEI()).append(';').
-           append(recipient.getIMSI()).append(';').
-           append(recipient.getLocation().latitude).append(';').
-           append(recipient.getLocation().longitude).append(';').
+           append(recipient.getMSISDN()).append(Constants.DELIMITER).
+           append(recipient.getIMEI()).append(Constants.DELIMITER).
+           append(recipient.getIMSI()).append(Constants.DELIMITER).
+           append(recipient.getLocation().latitude).append(Constants.DELIMITER).
+           append(recipient.getLocation().longitude).append(Constants.DELIMITER).
                 
-           append(type).append(';').
-           append(duration).append(';').
+           append(type).append(Constants.DELIMITER).
+           append(duration).append(Constants.DELIMITER).
            append(length);
         
          

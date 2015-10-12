@@ -14,8 +14,8 @@ import java.util.Random;
 public class Customer implements Comparable<Customer> {
     
     public static enum CallType {
-        Voice,
-        SMS
+        call,
+        sms
     }
     
     @Expose
