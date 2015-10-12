@@ -155,7 +155,7 @@ public class Utils {
     }
     
     public static Customer.CallType generateCallType() {
-        return random.nextInt(3) == 2 ? Customer.CallType.SMS : Customer.CallType.Voice;
+        return random.nextInt(3) == 2 ? Customer.CallType.sms : Customer.CallType.call;
     }
     
     public static int generateDuration() {
